@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2024 Davis-S, Oliver Tzeng
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+[SddmGreeterTheme]
+Name=MineSDDM Theme
+Namep[nl]=MineSDDM Thema
+Namep[tw]=MineSDDM 主題
+
+Description=MineSDDM is a custom theme for SDDM inspired by Minecraft’s retro 1.8 version and by the
+Minecraft GRUB Theme by Lxtharia
+Description[tw]=MineSDDM 主題是模擬 Minecraft retro v1.8 界面的登入畫面（sddm）主題，受 Lxtharia 的
+Minecraft GRUB Theme 所啟發
+Screenshot=screenshot.png
+MainScript=Main.qml
+Author=Davis-S, Oliver Tzeng
+License=AGPL-3.0
+Type=sddm-theme
+ConfigFile=theme.conf
+Theme-Id=minesddm-theme
+Theme-API=2.0
