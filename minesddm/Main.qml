@@ -209,7 +209,7 @@ Rectangle {
         }
 
         // Action selector button
-        CustomButton {
+        CustomButtonSmall {
             text: "->"
             width: config.itemHeight
             onCustomClicked: {
