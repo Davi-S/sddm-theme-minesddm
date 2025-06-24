@@ -12,7 +12,7 @@ Rectangle {
     property var sessions: []
     // Define a mapping of actions to their corresponding methods and availability
     property var actionMap: ({
-        "Power Off": {
+        "Cancel": {
             "enabled": sddm.canPowerOff,
             "method": sddm.powerOff
         },
@@ -53,7 +53,7 @@ Rectangle {
             return "Please wait while available desktop sessions are being loaded...";
         }
         if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
-            return "No session information available";
+            return "No game mode information available";
         }
         return sessions[sessionIndex].comment;
     }
