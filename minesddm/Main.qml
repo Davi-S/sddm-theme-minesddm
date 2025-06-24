@@ -144,9 +144,10 @@ Rectangle {
             }
 
             CustomText {
-                text: root.replacePlaceholders(config.usernameBottomLabel, {
-                    "username": usernameTextField.text
-                })
+                text: usernameTextField.text === "" ? config.usernameBottomLabelIfEmpty :
+                        root.replacePlaceholders(config.usernameBottomLabel, {
+                            "username": usernameTextField.text
+                        })
                 color: usernameTextField.text || config.usernameBottomLabelAlways ? config.darkText : "transparent"
             }
 
