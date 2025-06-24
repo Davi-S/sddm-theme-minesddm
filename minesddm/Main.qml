@@ -69,6 +69,9 @@ Rectangle {
 
     function maskPassword(plainInput) {
         let maskPattern = config.passwordMaskString;
+        if (maskPattern === "") {
+            maskPattern = "*"; // fallback
+        }
         let result = "";
         for (var i = 0; i < plainInput.length; ++i) {
             result += maskPattern[i % maskPattern.length];
@@ -171,16 +174,20 @@ Rectangle {
                 property string maskedPassword: ""
 
                 onTextChanged: {
-                    if (text.length > actualPasswordEntered.length) {
-                        actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition - 1)
-                                              + text.charAt(cursorPosition - 1)
-                                              + actualPasswordEntered.substring(cursorPosition - 1, actualPasswordEntered.length);
-                    } else if (text.length < actualPasswordEntered.length) {
-                        actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition)
-                                              + actualPasswordEntered.substring(cursorPosition + 1, actualPasswordEntered.length);
-                    }
-                    maskedPassword = maskPassword(actualPasswordEntered);
                     if(config.maskPassword === "true"){
+                        // careful, there is the recursive case of text.length === actualPasswordEntered.length
+                        if (text.length === actualPasswordEntered.length + 1) {
+                            actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition - 1)
+                                                + text.charAt(cursorPosition - 1)
+                                                + actualPasswordEntered.substring(cursorPosition - 1, actualPasswordEntered.length);
+                        } else if (text.length === actualPasswordEntered.length - 1) {
+                            actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition)
+                                                + actualPasswordEntered.substring(cursorPosition + 1, actualPasswordEntered.length);
+                        } else if(text.length !== actualPasswordEntered.length) { // either multiple characters were selected and deleted or something went wrong
+                            actualPasswordEntered = "";
+                            text = "";
+                        }
+                        maskedPassword = maskPassword(actualPasswordEntered);
                         let tmpCursorPosition = cursorPosition;
                         text = maskedPassword;
                         cursorPosition = tmpCursorPosition;
@@ -249,10 +256,11 @@ Rectangle {
             id: loginButton
 
             text: config.LoginButtonText
-            enabled: usernameTextField.text !== "" && passwordTextField.actualPasswordEntered !== ""
+            enabled: usernameTextField.text !== "" && ((config.maskedPassword === "true" && passwordTextField.actualPasswordEntered !== "") || (config.maskedPassword !== "true" && passwordTextField.text !== ""))
             onCustomClicked: {
                 console.log("login button clicked");
-                sddm.login(usernameTextField.text, passwordTextField.actualPasswordEntered, root.sessionIndex);
+                let password = config.maskPassword === "true" ? passwordTextField.actualPasswordEntered : passwordTextField.text;
+                sddm.login(usernameTextField.text, password, root.sessionIndex);
             }
         }
 
