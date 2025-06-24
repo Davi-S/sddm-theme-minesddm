@@ -67,6 +67,16 @@ Rectangle {
         return result;
     }
 
+    function maskPassword(plainInput) {
+        let maskPattern = config.passwordMaskString;
+        let result = "";
+        for (var i = 0; i < plainInput.length; ++i) {
+            result += maskPattern[i % maskPattern.length];
+        }
+        return result;
+    }
+
+
     height: config.screenHeight || Screen.height
     width: config.screenWidth || Screen.ScreenWidth
 
@@ -151,15 +161,40 @@ Rectangle {
             }
 
             PasswordTextField {
-                id: passswordTextField
+                id: passwordTextField
 
                 focus: true
                 onAccepted: loginButton.clicked()
+
+                property string actualPasswordEntered: ""
+                property string maskedPassword: ""
+
+                onTextChanged: {
+                    if (text.length > actualPasswordEntered.length) {
+                        actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition - 1)
+                                              + text.charAt(cursorPosition - 1)
+                                              + actualPasswordEntered.substring(cursorPosition - 1, actualPasswordEntered.length);
+                    } else if (text.length < actualPasswordEntered.length) {
+                        actualPasswordEntered = actualPasswordEntered.substring(0, cursorPosition)
+                                              + actualPasswordEntered.substring(cursorPosition + 1, actualPasswordEntered.length);
+                    }
+                    maskedPassword = maskPassword(actualPasswordEntered);
+                    if(config.maskPassword === "true"){
+                        let tmpCursorPosition = cursorPosition;
+                        text = maskedPassword;
+                        cursorPosition = tmpCursorPosition;
+                    }
+                }
             }
 
             CustomText {
-                text: config.passwordBottomLabel
-                color: passswordTextField.text || config.passwordBottomLabelAlways ? config.darkText : "transparent"
+                // these placeholder substitutions are useful for debugging
+                text: root.replacePlaceholders(config.passwordBottomLabel, {
+                    "maskedPassword": passwordTextField.maskedPassword,
+                    "actualPassword": passwordTextField.actualPasswordEntered,
+                    "cursorPosition": passwordTextField.cursorPosition
+                })
+                color: passwordTextField.text || config.passwordBottomLabelAlways ? config.darkText : "transparent"
             }
 
         }
@@ -212,11 +247,11 @@ Rectangle {
         CustomButton {
             id: loginButton
 
-            text: "Login"
-            enabled: usernameTextField.text !== "" && passswordTextField.text !== ""
+            text: config.LoginButtonText
+            enabled: usernameTextField.text !== "" && passwordTextField.actualPasswordEntered !== ""
             onCustomClicked: {
                 console.log("login button clicked");
-                sddm.login(usernameTextField.text, passswordTextField.text, root.sessionIndex);
+                sddm.login(usernameTextField.text, passwordTextField.actualPasswordEntered, root.sessionIndex);
             }
         }
 
@@ -248,8 +283,9 @@ Rectangle {
 
     Connections {
         function onLoginFailed() {
-            passswordTextField.text = "";
-            passswordTextField.focus = true;
+            passwordTextField.text = "";
+            passwordTextField.actualPasswordEntered = "";
+            passwordTextField.focus = true;
         }
 
         target: sddm
