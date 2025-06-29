@@ -16,8 +16,11 @@
         dontWrapQtApps = true;
 
         installPhase = ''
-          mkdir -p $out/share/sddm/themes/minesddm
-          cp -r minesddm/* $out/share/sddm/themes/minesddm/
+          THEME="$out/share/sddm/themes/minesddm"
+
+          mkdir -p "$THEME"
+          cp -r minesddm/* "$THEME/"
+          sed -i 's/^QtVersion=6$/QtVersion=5/' "$THEME/meta.desktop"
         '';
 
         meta = with pkgs.lib; {
