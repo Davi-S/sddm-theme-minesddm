@@ -16,8 +16,11 @@
         dontWrapQtApps = true;
 
         installPhase = ''
-          mkdir -p $out/share/sddm/themes/minesddm
-          cp -r minesddm/* $out/share/sddm/themes/minesddm/
+          THEME="$out/share/sddm/themes/minesddm"
+
+          mkdir -p "$THEME"
+          cp -r minesddm/* "$THEME/"
+          sed -i 's/^QtVersion=6$/QtVersion=5/' "$THEME/meta.desktop"
         '';
 
         meta = with pkgs.lib; {
@@ -29,7 +32,7 @@
     }) // {
       nixosModules.default = { config, pkgs, lib, ... }:
       let
-        cfg = config.services.xserver.displayManager.sddm;
+        cfg = config.services.displayManager.sddm;
         isMinesddmTheme = (cfg.theme == "minesddm") ||
                            (cfg.settings.Theme.Current == "minesddm");
       in {
