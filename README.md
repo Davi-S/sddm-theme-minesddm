@@ -13,22 +13,22 @@ MineSDDM is a custom theme for [SDDM](https://wiki.archlinux.org/title/SDDM) ins
 - **Qt**: Requires Qt 5.15 or later.
 - **Dependencies**: Confirm that your system has all SDDM, QT, and other system-specific dependencies installed. For example `qt5-quickcontrols2`, `layer-shell-qt5`, and `layer-shell-qt`.
 
-### Manual Instalation
+### Manual Installation
 
 Should work on most systems
 
 1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/Davi-S/sddm-theme-minesddm.git ~/sddm-theme-minesddm
+   ```sh
+   git clone https://github.com/Samsu-F/sddm-theme-minesddm.git
    ```
 
 2. **Copy the Theme Folder**:
-   ```bash
-   sudo cp -r ~/sddm-theme-minesddm/minesddm /usr/share/sddm/themes/
+   ```sh
+   sudo cp -r sddm-theme-minesddm/minesddm /usr/share/sddm/themes/
    ```
 
 3. **Set the Theme in SDDM**:
-   Edit the SDDM configuration file (usually located at `/etc/sddm.conf` file or `/etc/sddm.conf.d/` directory):
+   Edit the SDDM configuration file (usually located at `/etc/sddm.conf` or a file in the `/etc/sddm.conf.d/` directory):
    ```ini
    [Theme]
    Current=minesddm
@@ -50,7 +50,7 @@ Should work on most systems
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     minesddm = {
-      url = "github:Davi-S/sddm-theme-minesddm";
+      url = "github:Samsu-F/sddm-theme-minesddm";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
