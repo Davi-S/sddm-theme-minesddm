@@ -150,7 +150,11 @@ Rectangle {
             spacing: config.labelFieldSpacing
 
             CustomText {
-                text: config.usernameTopLabel
+                text: root.replacePlaceholders(config.usernameTopLabel, {
+                    "username": usernameTextField.text,
+                    "password": passwordTextField.getPassword(),
+                    "maskedPassword": passwordTextField.text
+                })
             }
 
             UsernameTextField {
@@ -163,7 +167,9 @@ Rectangle {
             CustomText {
                 text: usernameTextField.text === "" ? config.usernameBottomLabelIfEmpty :
                         root.replacePlaceholders(config.usernameBottomLabel, {
-                            "username": usernameTextField.text
+                            "username": usernameTextField.text,
+                            "password": passwordTextField.getPassword(),
+                            "maskedPassword": passwordTextField.text
                         })
                 color: config.darkText
             }
@@ -175,7 +181,11 @@ Rectangle {
             spacing: config.labelFieldSpacing
 
             CustomText {
-                text: config.passwordTopLabel
+                text: root.replacePlaceholders(config.passwordTopLabel, {
+                    "username": usernameTextField.text,
+                    "password": passwordTextField.getPassword(),
+                    "maskedPassword": passwordTextField.text
+                })
             }
 
             PasswordTextField {
@@ -246,7 +256,11 @@ Rectangle {
         CustomButton {
             id: loginButton
 
-            text: config.textLoginButton
+            text: root.replacePlaceholders(config.textLoginButton, {
+                "username": usernameTextField.text,
+                "password": passwordTextField.getPassword(),
+                "maskedPassword": passwordTextField.text
+            })
             enabled: usernameTextField.text !== "" && passwordTextField.getPassword() !== ""
             onCustomClicked: {
                 console.log("login button clicked");
@@ -258,7 +272,12 @@ Rectangle {
 
         // Do Action button
         CustomButton {
-            text: root.actionMap[root.actionKeys[root.currentActionIndex]].text
+            text: root.replacePlaceholders(root.actionMap[root.actionKeys[root.currentActionIndex]].text, {
+                "username": usernameTextField.text,
+                "password": passwordTextField.getPassword(),
+                "maskedPassword": passwordTextField.text,
+                "actionIndex": root.currentActionIndex
+            })
             enabled: root.actionMap[root.actionKeys[root.currentActionIndex]].enabled
             onCustomClicked: {
                 var actionKey = root.actionKeys[root.currentActionIndex]
@@ -270,7 +289,10 @@ Rectangle {
 
         // Action selector button
         CustomButton {
-            text: config.textCycleButton
+            text: root.replacePlaceholders(config.textCycleButton, {
+                "actionIndex": root.currentActionIndex,
+                "nextActionIndex": (root.currentActionIndex + 1) % root.actionKeys.length
+            })
             width: config.itemHeight
             onCustomClicked: {
                 root.currentActionIndex = (root.currentActionIndex + 1) % root.actionKeys.length;
