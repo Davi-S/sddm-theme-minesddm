@@ -47,7 +47,7 @@ Rectangle {
         if (!sessionsInitialized) {
             return config.sessionTextOnLoad;
         }
-        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
+        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex > sessions.length) {
             return config.sessionTextOnFailure;
         }
         return root.replacePlaceholders(config.sessionText, {
@@ -60,7 +60,7 @@ Rectangle {
         if (!sessionsInitialized) {
             return config.sessionCommentOnLoad;
         }
-        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex >= sessions.length) {
+        if (sessions.length === 0 || sessionIndex < 0 || sessionIndex > sessions.length) {
             return config.sessionCommentOnFailure;
         }
         return root.replacePlaceholders(config.sessionComment, {
