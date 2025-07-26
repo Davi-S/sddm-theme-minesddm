@@ -12,126 +12,6 @@ QtObject {
         '%:': '__ESCAPED_COLON__'
     }
 
-    // Helper function to escape special characters for use in a RegExp,
-    // since replaceAll is not being accepted as a function.
-    function escapeRegExp(text) {
-        return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    // Will escape all special characters in the text
-    // "{" to "%{"
-    // "?" to "%?"
-    // etc...
-    function escapeRawChars(text) {
-        let result = text;
-        // The '%' must be replaced first to avoid escaping the '%' in '%{' etc.
-        result = result.replace(/%/g, escapeCharacter + "%");
-        result = result.replace(/\{/g, escapeCharacter + "{");
-        result = result.replace(/\}/g, escapeCharacter + "}");
-        result = result.replace(/\?/g, escapeCharacter + "?");
-        result = result.replace(/:/g, escapeCharacter + ":");
-        return result;
-    }
-
-    // Process text by replacing escaped characters with temporary "placeholders"
-    // that will not be processed by the Formatter
-    function hideEscapes(text) {
-        let processedText = text;
-        for (const seq in escapeMap) {
-            if (Object.prototype.hasOwnProperty.call(escapeMap, seq)) {
-                processedText = processedText.replace(new RegExp(escapeRegExp(seq), 'g'), escapeMap[seq]);
-            }
-        }
-        return processedText;
-    }
-
-    // Evaluate a single conditional expression (ternary operator)
-    function evaluateConditional(content) {
-        // Gets the value before the "?" as the conditional and
-        // try to replace it if it is a placeholder
-        const qMarkIndex = content.indexOf('?');
-        let conditionStr = content.substring(0, qMarkIndex);
-        const conditionKey = `{${conditionStr}}`;
-        if (placeholderMap.has(conditionKey)) {
-            conditionStr = placeholderMap.get(conditionKey);
-        }
-
-        // splits the rest of the content on ":" into
-        // the value-if-true and the value-if-false
-        const restStr = content.substring(qMarkIndex + 1);
-        const colonIndex = restStr.indexOf(':');
-        let trueVal, falseVal;
-        if (colonIndex !== -1) {
-            trueVal = restStr.substring(0, colonIndex);
-            falseVal = restStr.substring(colonIndex + 1);
-        } else {
-            trueVal = restStr;
-            falseVal = '';
-        }
-
-        return conditionStr ? trueVal : falseVal;
-    }
-
-    // Evaluate simple placeholder lookup
-    function evaluatePlaceholder(content) {
-        const contentKey = `{${content}}`;
-        if (placeholderMap.has(contentKey)) {
-            let value = placeholderMap.get(contentKey);
-            // We need to escape and hide the value to ensure that if it contains
-            // especial characters, they are not flag as unmatched curly-braces 
-            // nor tried to be evaluated in the future.
-            value = escapeRawChars(value);
-            value = hideEscapes(value);
-            return value
-        } else {
-            showError(`Invalid placeholder: "{${content}}"`);
-            return "";
-        }
-    }
-
-    // Evaluate template content (either conditional or simple placeholder)
-    function evaluateTemplateContent(content) {
-        if (content.includes('?')) {
-            return evaluateConditional(content);
-        } else {
-            return evaluatePlaceholder(content);
-        }
-    }
-
-    // Process templates from inside out
-    function processTemplates(text) {
-        // This pattern finds a matched pair of curly braces that does not contain any other braces inside it
-        // These are the innermost templates to work on.
-        // Placeholders will usually be evaluated before the ternary expressions
-        const innermostRegex = /\{([^{}]*)\}/;
-        let processedText = text;
-
-        while (true) {
-            const match = innermostRegex.exec(processedText);
-            if (!match) break;
-            const content = match[1];
-            const evaluationResult = evaluateTemplateContent(content);
-            const start = match.index;
-            const end = start + match[0].length;
-            // Rebuilds the original string with the placeholder value
-            processedText = processedText.substring(0, start) + evaluationResult + processedText.substring(end);
-        }
-
-        return processedText;
-    }
-
-    // Process text by restoring the temporary "placeholders" created by
-    // hideEscapes into their actual values
-    function restoreEscapes(text) {
-        let processedText = text;
-        for (const seq in escapeMap) {
-            if (Object.prototype.hasOwnProperty.call(escapeMap, seq)) {
-                processedText = processedText.replace(new RegExp(escapeRegExp(escapeMap[seq]), 'g'), seq.charAt(1));
-            }
-        }
-        return processedText;
-    }
-
     // Main formatting function that orchestrates the entire process
     function formatString(text) {
         if (!text) return "";
@@ -166,4 +46,124 @@ QtObject {
         return processedText;
     }
 
+    // Process text by replacing escaped characters with temporary "placeholders"
+    // that will not be processed by the Formatter
+    function hideEscapes(text) {
+        let processedText = text;
+        for (const seq in escapeMap) {
+            if (Object.prototype.hasOwnProperty.call(escapeMap, seq)) {
+                processedText = processedText.replace(new RegExp(escapeRegExp(seq), 'g'), escapeMap[seq]);
+            }
+        }
+        return processedText;
+    }
+
+    // Process text by restoring the temporary "placeholders" created by
+    // hideEscapes into their actual values
+    function restoreEscapes(text) {
+        let processedText = text;
+        for (const seq in escapeMap) {
+            if (Object.prototype.hasOwnProperty.call(escapeMap, seq)) {
+                processedText = processedText.replace(new RegExp(escapeRegExp(escapeMap[seq]), 'g'), seq.charAt(1));
+            }
+        }
+        return processedText;
+    }
+
+    // Process templates from inside out
+    function processTemplates(text) {
+        // This pattern finds a matched pair of curly braces that does not contain any other braces inside it
+        // These are the innermost templates to work on.
+        // Placeholders will usually be evaluated before the ternary expressions
+        const innermostRegex = /\{([^{}]*)\}/;
+        let processedText = text;
+
+        while (true) {
+            const match = innermostRegex.exec(processedText);
+            if (!match) break;
+            const content = match[1];
+            const evaluationResult = evaluateTemplateContent(content);
+            const start = match.index;
+            const end = start + match[0].length;
+            // Rebuilds the original string with the placeholder value
+            processedText = processedText.substring(0, start) + evaluationResult + processedText.substring(end);
+        }
+
+        return processedText;
+    }
+
+    // Evaluate template content (either conditional or simple placeholder)
+    function evaluateTemplateContent(content) {
+        if (content.includes('?')) {
+            return evaluateConditional(content);
+        } else {
+            return evaluatePlaceholder(content);
+        }
+    }
+
+    // Evaluate simple placeholder lookup
+    function evaluatePlaceholder(content) {
+        const contentKey = `{${content}}`;
+        if (placeholderMap.has(contentKey)) {
+            let value = placeholderMap.get(contentKey);
+            // We need to escape and hide the value to ensure that if it contains
+            // especial characters, they are not flag as unmatched curly-braces 
+            // nor tried to be evaluated in the future.
+            value = escapeSpecialChars(value);
+            value = hideEscapes(value);
+            return value
+        } else {
+            showError(`Invalid placeholder: "{${content}}"`);
+            return "";
+        }
+    }
+
+    // Evaluate a single conditional expression (ternary operator)
+    function evaluateConditional(content) {
+        // Gets the value before the "?" as the conditional and
+        // try to replace it if it is a placeholder
+        const qMarkIndex = content.indexOf('?');
+        let conditionStr = content.substring(0, qMarkIndex);
+        const conditionKey = `{${conditionStr}}`;
+        if (placeholderMap.has(conditionKey)) {
+            conditionStr = placeholderMap.get(conditionKey);
+        }
+
+        // splits the rest of the content on ":" into
+        // the value-if-true and the value-if-false
+        const restStr = content.substring(qMarkIndex + 1);
+        const colonIndex = restStr.indexOf(':');
+        let trueVal, falseVal;
+        if (colonIndex !== -1) {
+            trueVal = restStr.substring(0, colonIndex);
+            falseVal = restStr.substring(colonIndex + 1);
+        } else {
+            trueVal = restStr;
+            falseVal = '';
+        }
+
+        return conditionStr ? trueVal : falseVal;
+    }
+
+    // Will escape all special characters in the text
+    // "{" to "%{"
+    // "?" to "%?"
+    // etc...
+    function escapeSpecialChars(text) {
+        let result = text;
+        // The '%' must be replaced first to avoid escaping the '%' in '%{' etc.
+        result = result.replace(/%/g, escapeCharacter + "%");
+        result = result.replace(/\{/g, escapeCharacter + "{");
+        result = result.replace(/\}/g, escapeCharacter + "}");
+        result = result.replace(/\?/g, escapeCharacter + "?");
+        result = result.replace(/:/g, escapeCharacter + ":");
+        return result;
+    }
+
+    // Helper function to escape special characters for use in a RegExp,
+    // since replaceAll is not being accepted as a function.
+    function escapeRegExp(text) {
+        return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    
 }
