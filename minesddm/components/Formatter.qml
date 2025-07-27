@@ -124,9 +124,8 @@ QtObject {
         // try to replace it if it is a placeholder
         const qMarkIndex = content.indexOf('?');
         let conditionStr = content.substring(0, qMarkIndex);
-        const conditionKey = `{${conditionStr}}`;
-        if (placeholderMap.has(conditionKey)) {
-            conditionStr = placeholderMap.get(conditionKey);
+        if (placeholderMap.has(conditionStr)) {
+            conditionStr = placeholderMap.get(conditionStr);
         }
 
         // splits the rest of the content on ":" into
