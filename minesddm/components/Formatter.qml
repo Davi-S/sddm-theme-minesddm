@@ -4,13 +4,13 @@ QtObject {
     // also change the explanation in config file accordingly, if you change the escapeCharacter
     readonly property string escapeCharacter: "%"
     required property var placeholderMap
-    readonly property var escapeMap: {
-        '%%': '__ESCAPED_PERCENT__',
-        '%{': '__ESCAPED_LEFT_BRACE__',
-        '%}': '__ESCAPED_RIGHT_BRACE__',
-        '%?': '__ESCAPED_QUESTION_MARK__',
-        '%:': '__ESCAPED_COLON__'
-    }
+    readonly property var escapeMap: ({
+        [escapeCharacter + escapeCharacter]: '__ESCAPED_ESCAPE_CHARACTER__',
+        [escapeCharacter + '{']: '__ESCAPED_LEFT_BRACE__',
+        [escapeCharacter + '}']: '__ESCAPED_RIGHT_BRACE__',
+        [escapeCharacter + '?']: '__ESCAPED_QUESTION_MARK__',
+        [escapeCharacter + ':']: '__ESCAPED_COLON__'
+    })
 
     // Main formatting function that orchestrates the entire process
     function formatString(text) {
@@ -145,13 +145,12 @@ QtObject {
     }
 
     // Will escape all special characters in the text
-    // "{" to "%{"
-    // "?" to "%?"
-    // etc...
+    // "{" to "<escapeCharacter>{"; "?" to "<escapeCharacter>?"; etc...
     function escapeSpecialChars(text) {
         let result = text;
-        // The '%' must be replaced first to avoid escaping the '%' in '%{' etc.
-        result = result.replace(/%/g, escapeCharacter + "%");
+        // The escape character must be replaced first to avoid escaping the escape character in "<escapeCharacter>{" etc.
+        const escapePattern = new RegExp(escapeRegExp(escapeCharacter), 'g');
+        result = result.replace(escapePattern, escapeCharacter + escapeCharacter);
         result = result.replace(/\{/g, escapeCharacter + "{");
         result = result.replace(/\}/g, escapeCharacter + "}");
         result = result.replace(/\?/g, escapeCharacter + "?");
