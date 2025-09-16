@@ -1,123 +1,167 @@
 import QtQuick 2.15
 
 QtObject {
-    readonly property string escapeCharacter: "%" // also change the explanation in config file accordingly, if you change this
+    // also change the explanation in config file accordingly, if you change the escapeCharacter
+    readonly property string escapeCharacter: "%"
     required property var placeholderMap
+    readonly property var escapeMap: ({
+        [escapeCharacter + escapeCharacter]: '__ESCAPED_ESCAPE_CHARACTER__',
+        [escapeCharacter + '{']: '__ESCAPED_LEFT_BRACE__',
+        [escapeCharacter + '}']: '__ESCAPED_RIGHT_BRACE__',
+        [escapeCharacter + '?']: '__ESCAPED_QUESTION_MARK__',
+        [escapeCharacter + ':']: '__ESCAPED_COLON__'
+    })
 
-    function formatString(str) {
-        if (str === undefined) {
-            showError("formatString: str is undefined.");
-            return -1;
+    // Main formatting function that orchestrates the entire process
+    function formatString(text) {
+        if (!text) return "";
+
+        // Pre-processing to handle escape sequences.
+        // This effectively makes the special characters invisible
+        // to the main processing logic
+        let processedText = hideEscapes(text);
+        
+        // Process the template
+        // This process function must receive the template without any escaped
+        // characters. This is why there is preprocessing.
+        processedText = processTemplates(processedText);
+        
+        // Check for unmatched braces
+        // After all the valid templates have been processed,
+        // there shouldn't be any curly braces left.
+        // If there are, it means the template was malformed.
+        // In this case, return the original text.
+        if (processedText.includes('{')) {
+            showError("formatString: unmatched '{' found in template.");
+            return text; 
         }
-        while (true) {
-            let closingIndex = _findFirstUnescaped(str, '}');
-            if (closingIndex === -1) {
-                if (_findFirstUnescaped(str, '{') === -1) {
-                    return _unescapeLiteral(str);
-                }
-                
-                showError("formatString: unmatched '}' at position " + closingIndex + " in \"" + str + "\".");
-                return _unescapeLiteral(str);
-            }
-            let openingIndex = _findLastUnescaped(str.substring(0, closingIndex), '{');
-            if (openingIndex === -1) {
-                showError("formatString: unmatched '{' at position " + openingIndex + " in \"" + str + "\".");
-                return _unescapeLiteral(str);
-            }
-            str = str.substring(0, openingIndex) + _substitute(str.substring(openingIndex, closingIndex + 1)) + str.substring(closingIndex + 1);
+        if (processedText.includes('}')) {
+            showError("formatString: unmatched '}' found in template.");
+            return text;
         }
+        
+        // Post-processing to restore the temporary "placeholders"
+        processedText = restoreEscapes(processedText);
+        
+        return processedText;
     }
 
-    function _findFirstUnescaped(str, searchChar) {
-        if (searchChar === escapeCharacter) {
-            showError("findFirstUnescaped must not be used to search the escape character.");
-            return -1;
+    // Process text by replacing escaped characters with temporary "placeholders"
+    // that will not be processed by the Formatter
+    function hideEscapes(text) {
+        let processedText = text;
+        for (const seq in escapeMap) {
+            if (Object.prototype.hasOwnProperty.call(escapeMap, seq)) {
+                processedText = processedText.replace(new RegExp(escapeRegExp(seq), 'g'), escapeMap[seq]);
+            }
         }
-        let indexCandidate = -1;
-        while (true) {
-            indexCandidate = str.indexOf(searchChar, indexCandidate + 1);
-            if (indexCandidate === -1) {
-                return -1;
-            }
-
-            let i = indexCandidate - 1;
-            while (i >= 0 && str.charAt(i) === escapeCharacter) {
-                i--;
-            }
-
-            let numberOfBackslashes = indexCandidate - i - 1;
-            if (numberOfBackslashes % 2 === 0) {
-                return indexCandidate;
-            }
-
-        }
+        return processedText;
     }
 
-    function _findLastUnescaped(str, searchChar) {
-        if (searchChar === escapeCharacter) {
-            showError(" _findLastUnescaped must not be used to search the escape character.");
-            return -1;
+    // Process text by restoring the temporary "placeholders" created by
+    // hideEscapes into their actual values
+    function restoreEscapes(text) {
+        let processedText = text;
+        for (const seq in escapeMap) {
+            if (Object.prototype.hasOwnProperty.call(escapeMap, seq)) {
+                processedText = processedText.replace(new RegExp(escapeRegExp(escapeMap[seq]), 'g'), seq.charAt(1));
+            }
         }
-        let indexCandidate = str.length;
-        while (true) {
-            indexCandidate = str.lastIndexOf(searchChar, indexCandidate - 1);
-            if (indexCandidate === -1) {
-                return -1;
-            }
-
-            let i = indexCandidate - 1;
-            while (i >= 0 && str.charAt(i) === escapeCharacter) {
-                i--;
-            }
-
-            let numberOfBackslashes = indexCandidate - i - 1;
-            if (numberOfBackslashes % 2 === 0) {
-                return indexCandidate;
-            }
-
-        }
+        return processedText;
     }
 
-    function _substitute(str) {
-        let indexQuestionMark = _findFirstUnescaped(str, '?');
-        if (indexQuestionMark !== -1) {
-            let indexColon = _findFirstUnescaped(str, ':');
-            if (indexQuestionMark > 1) {
-                // '{' is at index 0
-                return str.substring(indexQuestionMark + 1, indexColon);
-            }
+    // Process templates from inside out
+    function processTemplates(text) {
+        // This pattern finds a matched pair of curly braces that does not contain any other braces inside it
+        // These are the innermost templates to work on.
+        // Placeholders will usually be evaluated before the ternary expressions
+        const innermostRegex = /\{([^{}]*)\}/;
+        let processedText = text;
 
-            else {
-                return str.substring(indexColon + 1, str.length - 1);
-            }
+        while (true) {
+            const match = innermostRegex.exec(processedText);
+            if (!match) break;
+            const content = match[1];
+            const evaluationResult = evaluateTemplateContent(content);
+            const start = match.index;
+            const end = start + match[0].length;
+            // Rebuilds the original string with the placeholder value
+            processedText = processedText.substring(0, start) + evaluationResult + processedText.substring(end);
+        }
+
+        return processedText;
+    }
+
+    // Evaluate template content (either conditional or simple placeholder)
+    function evaluateTemplateContent(content) {
+        if (content.includes('?')) {
+            return evaluateConditional(content);
         } else {
-            if (!placeholderMap.has(str)) {
-                showError(`Invalid placeholder: \"${str}\"`);
-                return "";
-            }
-            return _escapeLiteral(placeholderMap.get(str));
+            return evaluatePlaceholder(content);
         }
     }
 
-    function _escapeLiteral(str) {
-        str = str.split(escapeCharacter).join(escapeCharacter + escapeCharacter);
-        str = str.split("{").join(escapeCharacter + "{");
-        str = str.split("}").join(escapeCharacter + "}");
-        str = str.split("?").join(escapeCharacter + "?");
-        str = str.split(":").join(escapeCharacter + ":");
-        return str;
+    // Evaluate simple placeholder lookup
+    function evaluatePlaceholder(content) {
+        const contentKey = `{${content}}`;
+        if (placeholderMap.has(contentKey)) {
+            let value = placeholderMap.get(contentKey);
+            // We need to escape and hide the value to ensure that if it contains
+            // especial characters, they are not flag as unmatched curly-braces 
+            // nor tried to be evaluated in the future.
+            value = escapeSpecialChars(value);
+            value = hideEscapes(value);
+            return value
+        } else {
+            showError(`Invalid placeholder: "{${content}}"`);
+            return "";
+        }
     }
 
-    function _unescapeLiteral(str) {
-        let result = "";
-        for (let s of str.split(escapeCharacter + escapeCharacter)) {
-            s = s.split(escapeCharacter + "{").join("{");
-            s = s.split(escapeCharacter + "}").join("}");
-            s = s.split(escapeCharacter + "?").join("?");
-            s = s.split(escapeCharacter + ":").join(":");
-            result += s;
+    // Evaluate a single conditional expression (ternary operator)
+    function evaluateConditional(content) {
+        // Gets the value before the "?" as the conditional and
+        // try to replace it if it is a placeholder
+        const qMarkIndex = content.indexOf('?');
+        let conditionStr = content.substring(0, qMarkIndex);
+        if (placeholderMap.has(conditionStr)) {
+            conditionStr = placeholderMap.get(conditionStr);
         }
+
+        // splits the rest of the content on ":" into
+        // the value-if-true and the value-if-false
+        const restStr = content.substring(qMarkIndex + 1);
+        const colonIndex = restStr.indexOf(':');
+        let trueVal, falseVal;
+        if (colonIndex !== -1) {
+            trueVal = restStr.substring(0, colonIndex);
+            falseVal = restStr.substring(colonIndex + 1);
+        } else {
+            trueVal = restStr;
+            falseVal = '';
+        }
+
+        return conditionStr ? trueVal : falseVal;
+    }
+
+    // Will escape all special characters in the text
+    // "{" to "<escapeCharacter>{"; "?" to "<escapeCharacter>?"; etc...
+    function escapeSpecialChars(text) {
+        let result = text;
+        // The escape character must be replaced first to avoid escaping the escape character in "<escapeCharacter>{" etc.
+        const escapePattern = new RegExp(escapeRegExp(escapeCharacter), 'g');
+        result = result.replace(escapePattern, escapeCharacter + escapeCharacter);
+        result = result.replace(/\{/g, escapeCharacter + "{");
+        result = result.replace(/\}/g, escapeCharacter + "}");
+        result = result.replace(/\?/g, escapeCharacter + "?");
+        result = result.replace(/:/g, escapeCharacter + ":");
         return result;
     }
 
+    // Helper function to escape special characters for use in a RegExp,
+    // since replaceAll is not being accepted as a function.
+    function escapeRegExp(text) {
+        return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    
 }
