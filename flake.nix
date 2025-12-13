@@ -39,7 +39,7 @@
           qt5.qtbase
           qt5.qtquickcontrols2
           qt5.qtgraphicaleffects
-          kdePackages.layer-shell-qt
+          libsForQt5.layer-shell-qt
         ];
       };
     };
