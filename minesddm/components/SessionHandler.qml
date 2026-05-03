@@ -1,7 +1,3 @@
-// This is a huge workaround just to get the name of the sessions
-// For some reason sessionModel.get is not working so I came up with this:
-// This will store the values of sessionModel in a list for later use
-
 import QtQml.Models 2.15
 import QtQuick 2.15
 import QtQuick.Controls 2.15
@@ -11,7 +7,7 @@ Item {
     id: sessionHandler
 
     property ListModel sessions: ListModel {}
-    property int sessionIndex: sessionModel.lastIndex
+    property int sessionIndex: 0
 
     function isValidIndex() {
         return sessionIndex >= 0 && sessionIndex < sessions.count;
@@ -30,7 +26,6 @@ Item {
 
         delegate: QtObject {
             Component.onCompleted: {
-                // Add session to ListModel
                 sessions.append({
                     "name": model.name,
                     "comment": model.comment
@@ -39,4 +34,14 @@ Item {
         }
     }
 
+    Component.onCompleted: {
+        if (sessions.count > 0) {
+            if (sessionModel.lastIndex > -1 && sessionModel.lastIndex < sessions.count) {
+                sessionIndex = sessionModel.lastIndex;
+            } else {
+                sessionIndex = 0;
+            }
+        }
+    }
 }
+

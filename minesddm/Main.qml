@@ -191,7 +191,7 @@ Rectangle {
             CustomButton {
                 text: formatter.formatString(config.textSessionButton)
                 onCustomClicked: {
-                    sessionHandler.sessionIndex = (sessionHandler.sessionIndex + 1) % sessionModel.count;
+                    sessionHandler.sessionIndex = (sessionHandler.sessionIndex + 1) % sessionHandler.sessions.count;
                 }
 
                 anchors {
