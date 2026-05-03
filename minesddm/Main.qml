@@ -50,12 +50,21 @@ Rectangle {
         id: sessionHandler
     }
 
+    function getUsernameList() {
+    var usernames = [];
+    for (var i = 0; i < userModel.count; i++) {
+        usernames.push(userModel.data(userModel.index(i, 0), 257));
+    }
+    return usernames.join(", ");
+}
+
     Formatter {
         id: formatter
 
         placeholderMap: new Map([
             ["{username}", usernameTextField.text],
             ["{password}", passwordTextField.getPassword()],
+            ["{usernameList}", getUsernameList()],
             ["{maskedPassword}", passwordTextField.displayText],
             ["{actionIndex}", `${root.currentActionIndex}`],
             ["{nextActionIndex}", `${(root.currentActionIndex + 1) % root.actionKeys.length}`],
@@ -167,6 +176,7 @@ Rectangle {
             }
 
             CustomText {
+                id: passwordBottomLabel
                 text: formatter.formatString(config.passwordBottomLabel)
                 color: config.darkText
             }
@@ -221,6 +231,7 @@ Rectangle {
                 console.log("login button clicked");
                 let password = passwordTextField.getPassword();
                 // console.log("trying to log in with username = '" + usernameTextField.text + "', password = '" + password + "'"); // only for debugging
+                passwordBottomLabel.text = formatter.formatString(config.passwordBottomLabel); // Reverts the login failed text back to the original
                 sddm.login(usernameTextField.text, password, sessionHandler.sessionIndex);
             }
         }
@@ -259,6 +270,7 @@ Rectangle {
             passwordTextField.ignoreChange = false;
             passwordTextField.actualPasswordEntered = "";
             passwordTextField.focus = true;
+            passwordBottomLabel.text = formatter.formatString(config.passwordBottomLabelFailed);
         }
 
         target: sddm
