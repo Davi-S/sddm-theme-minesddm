@@ -87,6 +87,8 @@ paru -Syu sddm-minesddm-theme
 ```
 </details>
 
+If the above is not working for you, check the "development" branch.
+
 ---
 
 ## Theme Customization
