@@ -34,7 +34,7 @@
                            (cfg.settings.Theme.Current == "minesddm");
       in {
         environment.systemPackages = with pkgs; [
-          self.packages.${pkgs.system}.default
+          self.packages.${pkgs.stdenv.hostPlatform.system}.default
         ] ++ lib.optionals isMinesddmTheme [
           qt5.qtbase
           qt5.qtquickcontrols2

@@ -11,9 +11,9 @@ MineSDDM is a custom theme for [SDDM](https://wiki.archlinux.org/title/SDDM) ins
 
 - **SDDM**: Ensure that SDDM is installed and set as your system’s display manager.
 - **Qt**: Requires Qt 5.15 or later.
-- **Dependencies**: Confirm that your system has all SDDM, QT, and other system-specific dependencies installed. For example `qt5-quickcontrols2`, `layer-shell-qt5`, and `layer-shell-qt`.
+- **Dependencies**: Confirm that your system has all SDDM, QT, and other system-specific dependencies installed. For example, `qt5-quickcontrols2`, `layer-shell-qt5`, and `layer-shell-qt`.
 
-### Manual Instalation
+### Manual Installation
 
 Should work on most systems
 
@@ -36,6 +36,14 @@ Should work on most systems
 
 3. **Logout of your session**:
    Logout and you will (probably) see the new theme
+
+### AUR
+
+It is available on AUR (not maintained by me) and can be installed using any AUR helper.
+
+```
+paru -Syu sddm-minesddm-theme
+```
 
 ### NixOS Installation
 
