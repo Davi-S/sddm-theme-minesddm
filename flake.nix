@@ -8,16 +8,38 @@
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
-      packages.default = pkgs.stdenv.mkDerivation {
+      # note for settings attr-set:
+      # { key = "value"; }     => key = value
+      # { key = "\"value\""; } => key = "value"
+      packages.default = pkgs.callPackage ({
+        lib,
+        stdenv,
+        settings ? {},
+        overwrite ? false,
+        ...
+      }: stdenv.mkDerivation rec {
         pname = "sddm-theme-minesddm";
         version = "1.0.0";
         src = ./.;
 
+        settingsText =
+          (if overwrite then ''
+            [general]
+          '' else ''
+            ${builtins.readFile "${src}/minesddm/theme.conf"}
+          '') + ''
+            ${lib.generators.toKeyValue
+              { mkKeyValue = lib.generators.mkKeyValueDefault {} " = "; }
+            settings}
+          '';
+
+        passAsFile = [ "settingsText" ];
         dontWrapQtApps = true;
 
         installPhase = ''
           mkdir -p $out/share/sddm/themes/minesddm
           cp -r minesddm/* $out/share/sddm/themes/minesddm/
+          cp $settingsTextPath $out/share/sddm/themes/minesddm/theme.conf
         '';
 
         meta = with pkgs.lib; {
@@ -25,7 +47,8 @@
           license = licenses.agpl3Only;
           platforms = platforms.linux;
         };
-      };
+      }) {};
+
     }) // {
       nixosModules.default = { config, pkgs, lib, ... }:
       let
